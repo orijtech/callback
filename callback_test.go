@@ -16,6 +16,7 @@ package callback_test
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -23,7 +24,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/odeke-em/callback"
+	"github.com/orijtech/callback"
 )
 
 type customRT struct {
@@ -131,7 +132,7 @@ func TestCallback(t *testing.T) {
 			RoundTripper: ct,
 		}
 
-		resp, err := cb.Do()
+		resp, err := cb.Do(context.Background())
 		if err != nil {
 			if !tt.wantError {
 				t.Errorf("#%d: err: %v", i, err)

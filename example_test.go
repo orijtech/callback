@@ -15,6 +15,7 @@
 package callback_test
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -29,7 +30,7 @@ func Example() {
 		URL:     "https://example.com/payload",
 		Payload: fmt.Sprintf(`{"time_now": %q}`, time.Now().Round(time.Second)),
 	}
-	resp, err := cb.Do()
+	resp, err := cb.Do(context.Background())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -54,7 +55,7 @@ func Example_WithServer() {
 				"time":   time.Now().Unix(),
 			},
 		}
-		_, err := cb.Do()
+		_, err := cb.Do(context.Background())
 
 		if err == nil {
 			w.Write([]byte("OK"))

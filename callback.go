@@ -16,12 +16,15 @@ package callback
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
 	"strings"
 	"sync"
+
+	"go.opencensus.io/plugin/ochttp"
 
 	"github.com/sethgrid/pester"
 )
@@ -44,6 +47,7 @@ func exponentialBackoffClient(retries int) httpDoer {
 	}
 	client.KeepLog = true
 	client.MaxRetries = retries
+	client.Transport = &ochttp.Transport{}
 
 	return client
 }
@@ -63,14 +67,14 @@ type httpDoer interface {
 	Do(*http.Request) (*http.Response, error)
 }
 
-func (cb *Callback) Do() (*http.Response, error) {
+func (cb *Callback) Do(ctx context.Context) (*http.Response, error) {
 	if err := cb.Validate(); err != nil {
 		return nil, err
 	}
 
 	var doer httpDoer = defaultClient
 	if rt := cb.RoundTripper; rt != nil {
-		doer = &http.Client{Transport: rt}
+		doer = &http.Client{Transport: &ochttp.Transport{Base: rt}}
 	}
 
 	var body io.Reader = nil
@@ -104,10 +108,14 @@ func (cb *Callback) Do() (*http.Response, error) {
 		body = buf
 	}
 
-	req, _ := http.NewRequest("POST", cb.URL, body)
+	req, err := http.NewRequest("POST", cb.URL, body)
+	if err != nil {
+		return nil, err
+	}
 	if isJSONEncoded {
 		req.Header.Set("Content-Type", "application/json")
 	}
+	req = req.WithContext(ctx)
 
 	return doer.Do(req)
 }
